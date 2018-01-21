@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+
+"""
+*********************************************************
+author: ISS-Kerui
+date:2018-01-20
+VGG_16 is a function to extracted features from raw pictures using VGG-16 model.
+Bi_LSTM is a function to using Bi-LSTM to combine 50 pictures' feature(we cut each video file into 50 frames) maps and get the final result.
+vgg_image_feature is a function to reszie and standardized pictures.
+*********************************************************
+"""
+
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers import Activation,TimeDistributed,Bidirectional,Input
@@ -78,7 +89,7 @@ model_vgg16.compile(optimizer=sgd, loss='categorical_crossentropy')
 layer = layer_dict['flat']
 transformer = theano.function([model_vgg16.input], layer.output)
 
-#def vgg_image_feature((transformer,img_path)):
+
 def vgg_image_feature(img_path):
     im = cv2.resize(cv2.imread(img_path), (224, 224)).astype(np.float32)#读入图片BGR通道
     im[:,:,0] -= 103.939
@@ -145,10 +156,10 @@ def Bi_LSTM(weights_path,test_data,test_labels,test_vname):
     phone_pdict_value = np.array(phone_pdict_value)
     smoke_pdict_value = np.array(smoke_pdict_value)
     seatfree_pdict_value = np.array(seatfree_pdict_value)
-    np.save("pdict_value/normal.npy",normal_pdict_value)
-    np.save("pdict_value/phone.npy",phone_pdict_value)
-    np.save("pdict_value/smoke.npy",smoke_pdict_value)
-    np.save("pdict_value/seatfree.npy",seatfree_pdict_value)
+    np.save("predict_value/normal.npy",normal_pdict_value)
+    np.save("predict_value/phone.npy",phone_pdict_value)
+    np.save("predict_value/smoke.npy",smoke_pdict_value)
+    np.save("predict_value/seatfree.npy",seatfree_pdict_value)
 
    
 
@@ -171,65 +182,8 @@ def Bi_LSTM(weights_path,test_data,test_labels,test_vname):
     ratio0 = ratio0.sum()/ratio0.shape[0]
 
 
-    logger.info(u'正确率 ： %f' %ratio0)
-    distort_phone = []
-    distort_smoke = []
-    distort_seatfree= []
-    m0 = 0
-    m1 = 0
-    m2 = 0
-    n0 = 0
-    n1 = 0
-    n2 = 0
-    for i in range(test_labels.shape[0]):
-        if 1 != pred_y[i][0]:
-            if pred_y[i][1]==1:
-                distort_phone.append(test_vname[i])
-                m0+=1
-                if pred_y[i][0] == test_labels[i][0] and pred_y[i][1] == test_labels[i][1] and pred_y[i][2] == test_labels[i][2] and pred_y[i][3] == test_labels[i][3] and pred_y[i][4] == test_labels[i][4] and pred_y[i][5] == test_labels[i][5] and pred_y[i][6] == test_labels[i][6] and pred_y[i][7] == test_labels[i][7]:
-                    n0+=1
-            elif pred_y[i][2]==1:
-                distort_smoke.append(test_vname[i])
-                m1+=1
-                if pred_y[i][0] == test_labels[i][0] and pred_y[i][1] == test_labels[i][1] and pred_y[i][2] == test_labels[i][2] and pred_y[i][3] == test_labels[i][3] and pred_y[i][4] == test_labels[i][4] and pred_y[i][5] == test_labels[i][5] and pred_y[i][6] == test_labels[i][6] and pred_y[i][7] == test_labels[i][7]:
-                    n1+=1
-            elif pred_y[i][7]==1:
-                distort_seatfree.append(test_vname[i])
-                m2+=1
-                if pred_y[i][0] == test_labels[i][0] and pred_y[i][1] == test_labels[i][1] and pred_y[i][2] == test_labels[i][2] and pred_y[i][3] == test_labels[i][3] and pred_y[i][4] == test_labels[i][4] and pred_y[i][5] == test_labels[i][5] and pred_y[i][6] == test_labels[i][6] and pred_y[i][7] == test_labels[i][7]:
-                    n2+=1
-      
-
-
-    l0 = (m0+m1-(n0+n1+0.0))/(m0+m1)
-    l1 = (m0-n0+0.0)/m0
-    l2 = (m1-n1+0.0)/m1
-    l3 = (m2-n2+0.0)/m2
-
-    logger.info(u'平均误报率 ： %f' %l0)
-    logger.info(u'phone误报率 ： %f' %l1)
-    logger.info(u'smoke误报率 ： %f' %l2)
-    logger.info(u'seatfree误报率 ： %f' %l3)
-
-
-    
-
-    num_phone = len(distort_phone)
-    num_smoke = len(distort_smoke)
-    num_seatfree = len(distort_seatfree)
-    phone_name = ''
-    smoke_name = ''
-    seatfree_name = ''
-    for i in range(len(distort_phone)):
-        phone_name = phone_name+distort_phone[i]+'\n'
-    for i in range(len(distort_smoke)):
-        smoke_name = smoke_name+distort_smoke[i]+'\n'
-    for i in range(len(distort_seatfree)):
-        seatfree_name = seatfree_name+distort_seatfree[i]+'\n'
-    info = u"预测为phone类别的视频总数为："+str(num_phone)+u'\n视频名称为：\n'+phone_name+u"预测为smoke类别的视频总数为："+str(num_smoke)+u'\n视频名称为：\n'+smoke_name+u"预测为seatfree类别的视频总数为："+str(num_seatfree)+u'\n视频名称为：\n'+seatfree_name
-    f = open('predict.txt','w+')
-    f.write(info)
-    f.close()
+    logger.info(u'accuracy ： %f' %ratio0)
+  
 
 
 from multiprocessing import Pool
@@ -250,7 +204,7 @@ if __name__ == "__main__":
     test_data = []
     test_labels = []
     test_vname = []
-    test_file = '../dataset/test_optical2'
+    test_file = '../dataset/img2/Test-Image'
     time_whole = time.time()
     logger.info('load and analyze the features of test data ... ')
     for label in os.listdir(test_file):
@@ -305,11 +259,11 @@ if __name__ == "__main__":
     test_data = np.asarray(test_data)
     test_labels = np_utils.to_categorical(test_labels, 8)
 
-    np.save("np10/test_data.npy", test_data)
-    np.save("np10/test_labels.npy", test_labels)
+    np.save("../npy/test_data.npy", test_data)
+    np.save("../npy/test_labels.npy", test_labels)
     current_time = time.time()
   
     logger.info('analyzing test data has taken %d h %d min %d s .'%((current_time-time_whole)/3600, ((current_time-time_whole)%3600)/60, (current_time-time_whole)%60))
  
-    Bi_LSTM('./IBRD_weights7.h5',test_data,test_labels,test_vname)
+    Bi_LSTM('../h5/IBRD_weights.h5',test_data,test_labels,test_vname)
 
